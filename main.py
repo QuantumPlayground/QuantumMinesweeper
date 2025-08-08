@@ -1,14 +1,30 @@
 
 from minesweeper import Minesweeper
-from quantum_minesweeper import QuantumMinesweeperSolver
+        
+COLS = 5
+ROWS = 4
+BOMBS = 3
+m = Minesweeper(COLS, ROWS, BOMBS)
 
-# ----------------------------
-# Example usage (when run directly)
-# ----------------------------
-if __name__ == "__main__":
-    # Example: 8x8 with 20% mines
-    g = Minesweeper(height=8, width=8, mine_ratio=0.2)
-    solver = QuantumMinesweeperSolver(g, shots=4096)
-    result = solver.solve(verbose=True)
-    print("Result:", "Win" if result else "Loss")
+m.print_board()
+user = input("Enter move code: ")
+r, c = m.square_to_index(user)
+m.first_move(r, c)
 
+game_outcome = True
+
+while m.bomb_board != m.fog_board:
+    m.print_board()
+    user = input("Enter move code: ")
+    r, c = m.square_to_index(user)
+
+    if m.move(r, c):
+        game_outcome = False
+        break
+
+if game_outcome:
+    print("VICTORY")
+    m.print_board()
+else:
+    print("LOSS")
+    m.print_solution()

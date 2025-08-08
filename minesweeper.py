@@ -1,104 +1,100 @@
 
-from typing import Optional, Tuple, List, Dict
 import random
-import string
+import copy
 
-# ----------------------------
-# Minesweeper class (from before)
-# ----------------------------
 class Minesweeper:
-    def __init__(self, height=8, width=8, mine_ratio=0.2):
-        self.HEIGHT = height
-        self.WIDTH = width
-        self.MINE_RATIO = mine_ratio
-        self.total_cells = self.HEIGHT * self.WIDTH
-        self.num_mines = int(self.total_cells * self.MINE_RATIO)
+    def __init__(self, cols, rows, bombs):
+        self.cols = cols
+        self.rows = rows
+        self.bombs = bombs
 
-        self.visible = [[None for _ in range(self.WIDTH)] for _ in range(self.HEIGHT)]
-        self.board = None
-        self.first_move = True
+        self.bomb_board = None
+        self.number_board = None
+        self.base_board = None
+        self.fog_board = [[1 for _ in range(self.cols)] for _ in range(self.rows)]
 
-    def generate_board(self, first_r: int, first_c: int):
-        """Generate a board where the first move is guaranteed to be an empty cell (0 adjacent mines)."""
-        while True:
-            # Start with empty board
-            board = [[0 for _ in range(self.WIDTH)] for _ in range(self.HEIGHT)]
+        self.board = [[1 for _ in range(self.cols)] for _ in range(self.rows)]
 
-            # Place mines randomly, excluding the first cell
-            excluded = {(first_r, first_c)}
-            all_positions = [i for i in range(self.total_cells) if (i // self.WIDTH, i % self.WIDTH) not in excluded]
-            mine_positions = random.sample(all_positions, self.num_mines)
-            for pos in mine_positions:
-                r = pos // self.WIDTH
-                c = pos % self.WIDTH
-                board[r][c] = -1  # -1 is a mine
+    
+    def index_to_square(self, r=-1, c=-1):
+        return chr(ord('A') + c) + str(r+1)
 
-            # Fill numbers
-            for r in range(self.HEIGHT):
-                for c in range(self.WIDTH):
-                    if board[r][c] == -1:
+    def square_to_index(self, code='A1'):
+        col = ord(code[0]) - ord('A')
+        row_from_bottom = int(code[1]) - 1
+        row_from_top = (self.rows - 1) - row_from_bottom
+        return row_from_top, col 
+
+    def first_move(self, r1, c1):
+        self.bomb_board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
+        for _ in range(self.bombs):
+            r, c = random.randrange(self.rows), random.randrange(self.cols)
+            while self.bomb_board[r][c] == 1 or abs(r - r1) <= 1 and abs(c - c1) <= 1:
+                r, c = random.randrange(self.rows), random.randrange(self.cols)
+            self.bomb_board[r][c] = 1
+
+        def count_neighbouring_bombs(r, c):
+            count = 0
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    if i == 0 and j == 0:
                         continue
-                    mines_count = 0
-                    for dr in [-1, 0, 1]:
-                        for dc in [-1, 0, 1]:
-                            if dr == 0 and dc == 0:
-                                continue
-                            nr, nc = r + dr, c + dc
-                            if 0 <= nr < self.HEIGHT and 0 <= nc < self.WIDTH and board[nr][nc] == -1:
-                                mines_count += 1
-                    board[r][c] = mines_count
+                    if r + i < 0 or r + i >= self.rows or c + j < 0 or c + j >= self.cols:
+                        continue
+                    if self.bomb_board[r + i][c + j] == 1:
+                        count += 1
+            return count
 
-            # Check if the first cell is empty (0 adjacent mines)
-            if board[first_r][first_c] == 0:
-                return board
+        self.number_board = [[count_neighbouring_bombs(r, c) for c in range(self.cols)] for r in range(self.rows)]
 
-    def display_board(self):
-        letters = string.ascii_uppercase[:self.WIDTH]
-        print("   " + " ".join(letters))
-        for r in range(self.HEIGHT):
-            row_str = f"{r+1:2} "
-            for c in range(self.WIDTH):
-                if self.visible[r][c] is None:
-                    row_str += ". "
+        self.base_board = copy.deepcopy(self.number_board)
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if self.bomb_board[r][c] == 1:
+                    self.base_board[r][c] = '*'
+
+        self.move(r1, c1)
+
+    def move(self, r, c):
+
+        if self.fog_board[r][c] == 1:
+            self.fog_board[r][c] = 0
+
+            if self.number_board[r][c] == 0:
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        if i == 0 and j == 0:
+                            continue
+                        if r + i < 0 or r + i >= self.rows or c + j < 0 or c + j >= self.cols:
+                            continue
+
+                        if self.fog_board[r + i][c + j] == 1:
+                            self.move(r + i, c + j)
+
+        return self.bomb_board[r][c] == 1
+
+    def print_board(self):
+
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if self.fog_board[r][c] == 1:
+                    self.board[r][c] = '?'
                 else:
-                    row_str += f"{self.visible[r][c]} "
-            print(row_str)
+                    self.board[r][c] = self.base_board[r][c]
 
-    def reveal(self, r: int, c: int):
-        if self.visible[r][c] is not None:
-            return
-        if self.board[r][c] == -1:
-            self.visible[r][c] = "*"
-            return
+        print()
+        print('   ┌' + '─'*(2*self.cols + 1) + '┐')
+        for i in range(self.rows):
+            print(str(self.rows - i).rjust(2) + ' │ ' + ' '.join(str(x) if x != 0 else ' ' for x in self.board[i]) + ' │')
+        print('   └' + '─'*(2*self.cols + 1) + '┘')
+        print('     ' + ' '.join(self.index_to_square(c=j)[0] for j in range(self.cols)))
+        print()
 
-        self.visible[r][c] = str(self.board[r][c])
-        if self.board[r][c] == 0:
-            self.visible[r][c] = " "
-            for dr in [-1, 0, 1]:
-                for dc in [-1, 0, 1]:
-                    if dr == 0 and dc == 0:
-                        continue
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < self.HEIGHT and 0 <= nc < self.WIDTH:
-                        self.reveal(nr, nc)
-
-    def coords_from_input(self, user_input: str) -> Optional[Tuple[int, int]]:
-        user_input = user_input.strip().upper()
-        if len(user_input) < 2:
-            return None
-        col_letter = user_input[0]
-        if col_letter not in string.ascii_uppercase[:self.WIDTH]:
-            return None
-        try:
-            row_number = int(user_input[1:])
-        except ValueError:
-            return None
-        if not (1 <= row_number <= self.HEIGHT):
-            return None
-        r = row_number - 1
-        c = string.ascii_uppercase.index(col_letter)
-        return r, c
-
-    def is_won(self) -> bool:
-        unrevealed = sum(1 for rr in range(self.HEIGHT) for cc in range(self.WIDTH) if self.visible[rr][cc] is None)
-        return unrevealed == self.num_mines
+    def print_solution(self):
+        print()
+        print('   ┌' + '─'*(2*self.cols + 1) + '┐')
+        for i in range(self.rows):
+            print(str(self.rows - i).rjust(2) + ' │ ' + ' '.join(str(x) if x != 0 else ' ' for x in self.base_board[i]) + ' │')
+        print('   └' + '─'*(2*self.cols + 1) + '┘')
+        print('     ' + ' '.join(self.index_to_square(c=j)[0] for j in range(self.cols)))
+        print()
