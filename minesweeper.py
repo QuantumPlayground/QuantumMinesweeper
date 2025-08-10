@@ -54,6 +54,7 @@ class Minesweeper:
                     self.base_board[r][c] = '*'
 
         self.move(r1, c1)
+        self.update_board()
 
     def move(self, r, c):
 
@@ -71,16 +72,19 @@ class Minesweeper:
                         if self.fog_board[r + i][c + j] == 1:
                             self.move(r + i, c + j)
 
+        self.update_board()
         return self.bomb_board[r][c] == 1
-
-    def print_board(self):
-
+    
+    def update_board(self):
         for r in range(self.rows):
             for c in range(self.cols):
                 if self.fog_board[r][c] == 1:
                     self.board[r][c] = '?'
                 else:
                     self.board[r][c] = self.base_board[r][c]
+
+    def print_board(self):
+        self.update_board()
 
         print()
         print('   ┌' + '─'*(2*self.cols + 1) + '┐')

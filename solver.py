@@ -1,5 +1,7 @@
 
 import copy
+from itertools import combinations
+import math
 
 class ClassicalSolver:
     def __init__(self, cols, rows, bombs):
@@ -8,13 +10,16 @@ class ClassicalSolver:
         self.bombs = bombs
 
         self.arrangements = []
-        self.boards = []
+        self.solutions = []
 
-    def generate_arrangements(self):
-        for i in range(self.cols*self.rows-2):
-            for j in range(i+1, COLS*ROWS-1):
-                for k in range(j+1, COLS*ROWS):
-                    self.arrangements.append((i, j, k))
+        self.number_of_solutions = self.num_combinations(self.rows, self.cols, self.bombs)
+
+    def num_combinations(self, rows, cols, bombs):
+        return math.comb(rows*cols, bombs)
+
+    def generate_boards(self):
+        total = self.cols * self.rows
+        self.arrangements = list(combinations(range(total), self.bombs))
 
         def count_neighbouring_bombs(bomb_board, r, c):
             count = 0
@@ -29,27 +34,38 @@ class ClassicalSolver:
             return count
 
         for arr in self.arrangements:
-            bomb_board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
+            bomb_board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
             for dim in arr:
-                bomb_board[dim//COLS][dim%COLS] = 1
+                bomb_board[dim//self.cols][dim%self.cols] = 1
 
-            number_board = [[count_neighbouring_bombs(bomb_board, r, c) for c in range(COLS)] for r in range(ROWS)]
+            number_board = [[count_neighbouring_bombs(bomb_board, r, c) for c in range(self.cols)] for r in range(self.rows)]
 
             base_board = copy.deepcopy(number_board)
-            for r in range(ROWS):
-                for c in range(COLS):
+            for r in range(self.rows):
+                for c in range(self.cols):
                     if bomb_board[r][c] == 1:
                         base_board[r][c] = '*'
 
             board = tuple(map(tuple, base_board))
-            self.boards.append(board)
+            self.solutions.append(board)
 
+    def compare_to_evidence(self, fog_board, board):
+        def add_fog(fog_board, base_board):
+            def check_fog(r, c):
+                if fog_board[r][c] == 1:
+                    return '?'
+                else: 
+                    return base_board[r][c]
+                
+            board = [[check_fog(r, c) for c in range(self.cols)] for r in range(self.rows)]
+            return board
 
+        for i in range(len(self.solutions)-1, -1, -1):
+            if add_fog(fog_board, self.solutions[i]) != board:
+                self.solutions.pop(i)
 
-COLS = 5
-ROWS = 4
-BOMBS = 3
+        self.number_of_solutions = len(self.solutions)
 
-c = ClassicalSolver(COLS, ROWS, BOMBS)
-c.generate_arrangements()
-print(c.boards[1069])
+    def finished(self):
+        return len(self.solutions) == 1
+    
