@@ -12,7 +12,7 @@ class ClassicalSolver:
         self.arrangements = []
         self.solutions = []
 
-        self.number_of_solutions = self.num_combinations(self.rows, self.cols, self.bombs)
+        self.initial_configs = self.num_combinations(self.rows, self.cols, self.bombs)
 
     def num_combinations(self, rows, cols, bombs):
         return math.comb(rows*cols, bombs)
@@ -33,9 +33,14 @@ class ClassicalSolver:
                         count += 1
             return count
 
-        for arr in self.arrangements:
+        ten_percent = self.initial_configs // 10
+        for i in range(len(self.arrangements)):
+
+            if i % ten_percent == 0:
+                print("Progress: {}%".format(10 * (i // ten_percent)))
+
             bomb_board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
-            for dim in arr:
+            for dim in self.arrangements[i]:
                 bomb_board[dim//self.cols][dim%self.cols] = 1
 
             number_board = [[count_neighbouring_bombs(bomb_board, r, c) for c in range(self.cols)] for r in range(self.rows)]
@@ -63,8 +68,6 @@ class ClassicalSolver:
         for i in range(len(self.solutions)-1, -1, -1):
             if add_fog(fog_board, self.solutions[i]) != board:
                 self.solutions.pop(i)
-
-        self.number_of_solutions = len(self.solutions)
 
     def finished(self):
         return len(self.solutions) == 1

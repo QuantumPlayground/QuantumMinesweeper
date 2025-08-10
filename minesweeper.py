@@ -17,13 +17,12 @@ class Minesweeper:
 
     
     def index_to_square(self, r=-1, c=-1):
-        return chr(ord('A') + c) + str(r+1)
+        return chr(ord('A') + c) + str(r + 1)
 
     def square_to_index(self, code='A1'):
-        col = ord(code[0]) - ord('A')
-        row_from_bottom = int(code[1]) - 1
-        row_from_top = (self.rows - 1) - row_from_bottom
-        return row_from_top, col 
+            col = ord(code[0]) - ord('A')
+            row_from_bottom = int(code[1:]) - 1
+            return row_from_bottom, col 
 
     def first_move(self, r1, c1):
         self.bomb_board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
@@ -88,17 +87,46 @@ class Minesweeper:
 
         print()
         print('   ┌' + '─'*(2*self.cols + 1) + '┐')
-        for i in range(self.rows):
-            print(str(self.rows - i).rjust(2) + ' │ ' + ' '.join(str(x) if x != 0 else ' ' for x in self.board[i]) + ' │')
+        for row_from_bottom in range(self.rows):
+            board_r = self.rows - 1 - row_from_bottom  # convert to top-based index for array access
+            print(str(board_r + 1).rjust(2) + 
+                ' │ ' +
+                ' '.join(str(x) if x != 0 else ' ' for x in self.board[board_r]) +
+                ' │')
         print('   └' + '─'*(2*self.cols + 1) + '┘')
-        print('     ' + ' '.join(self.index_to_square(c=j)[0] for j in range(self.cols)))
+        print('     ' + ' '.join(chr(ord('A') + j) for j in range(self.cols)))
         print()
 
     def print_solution(self):
         print()
         print('   ┌' + '─'*(2*self.cols + 1) + '┐')
-        for i in range(self.rows):
-            print(str(self.rows - i).rjust(2) + ' │ ' + ' '.join(str(x) if x != 0 else ' ' for x in self.base_board[i]) + ' │')
+        for row_from_bottom in range(self.rows):
+            board_r = self.rows - 1 - row_from_bottom
+            print(str(board_r + 1).rjust(2) + ' │ ' +
+                ' '.join(str(x) if x != 0 else ' ' for x in self.base_board[board_r]) +
+                ' │')
         print('   └' + '─'*(2*self.cols + 1) + '┘')
-        print('     ' + ' '.join(self.index_to_square(c=j)[0] for j in range(self.cols)))
+        print('     ' + ' '.join(chr(ord('A') + j) for j in range(self.cols)))
+        print()
+
+    def debug_display(self):
+        print()
+        print('   ┌' + '─'*(2*self.cols + 1) + '┐')
+        for row_from_bottom in range(self.rows):
+            board_r = self.rows - 1 - row_from_bottom
+            print(str(board_r + 1).rjust(2) + ' │ ' +
+                ' '.join(self.index_to_square(board_r, j) for j in range(self.cols)) +
+                ' │')
+        print('   └' + '─'*(2*self.cols + 1) + '┘')
+        print('     ' + ' '.join(chr(ord('A') + j) for j in range(self.cols)))
+        print()
+
+        print('   ┌' + '─'*(2*self.cols + 1) + '┐')
+        for row_from_bottom in range(self.rows):
+            board_r = self.rows - 1 - row_from_bottom
+            print(str(board_r + 1).rjust(2) + ' │ ' +
+                ' '.join(str(self.square_to_index(self.index_to_square(board_r, j))) for j in range(self.cols)) +
+                ' │')
+        print('   └' + '─'*(2*self.cols + 1) + '┘')
+        print('     ' + ' '.join(chr(ord('A') + j) for j in range(self.cols)))
         print()
