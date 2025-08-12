@@ -2,9 +2,9 @@
 from minesweeper import Minesweeper
 from solver import ClassicalSolver
 
-COLS = 6
+COLS = 5
 ROWS = 5
-BOMBS = 6
+BOMBS = ROWS * COLS // 4
 game = Minesweeper(COLS, ROWS, BOMBS)
 
 
